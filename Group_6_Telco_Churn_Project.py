@@ -1,27 +1,26 @@
-
 #--Group Members
 #-1 Amanor Teinor – 22258276---
 #-2.Joseph Harvey-Ewusi – 22253143---
 #-3.Kwadwo Jectey Nyarko – 11410422---
 #-4.Anael K. Djentuh - 22252467---
 #-5.Princess Awurabena Frimpong- 22254024--
-
-import numpy as np ## Handling arrays
+import numpy as np ## 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 from sklearn.model_selection import train_test_split,KFold,cross_val_score ##Cross validation
 from sklearn.preprocessing import MinMaxScaler ## Scaling Algorithm
 
-from sklearn.tree import DecisionTreeClassifier ## Loading Decision Tree Classifier
-from sklearn.ensemble import RandomForestClassifier ## Loading  Random Forest Classifier
+from sklearn.tree import DecisionTreeClassifier ## Decision Tree Classisfier
+from sklearn.ensemble import RandomForestClassifier ## Loading of Random Forest Classifier
 
 
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import accuracy_score,f1_score,precision_score,recall_score,classification_report,confusion_matrix,roc_curve,auc ## classification validation metrics
 from sklearn.model_selection import cross_val_score
-import streamlit as st ## Loading  streamlit
+import streamlit as st ## Loading of streamlit 
 from PIL import Image
 from streamlit import dataframe
 from unicodedata import numeric
@@ -31,21 +30,20 @@ import io
 import tempfile
 import os
 
-#--- Loading of Company Logo----
-logo = Image.open("C:/Users/kojon/PycharmProjects/SupervisedProjects/Supervised Projects/FOXTECH LOGO.jpeg")
+logo = Image.open("data/assets/FOXTECH LOGO.jpeg") ### Loading of Company Logo
 st.image(logo,caption="",width=300)
 
 #Looading data at the Global level
 try:
-    dataset = pd.read_csv("C:/Users/kojon/PycharmProjects/SupervisedProjects/Supervised Projects/Customer-Churn.csv")
+    dataset = pd.read_csv("data/Customer-Churn.csv")
 except FileNotFoundError as e :
     st.error(f"User, check if there is error loading dataset{e}")
     st.stop()
 
 ##creating a copy of data
-dataset_1 = dataset.copy()
+dataset_1 = dataset.copy() 
 
-## Function for Preprocessing
+##Function to preprocess data.
 def preprocess_churn_dataset(df):
     df = df.copy() ## Creating a copy of the dataa
 
@@ -86,7 +84,7 @@ def preprocess_churn_dataset(df):
             'Credit card (automatic)': 3
         }
     }
-    #---Renaming  and reordering of columns
+    ## Renaming  and reordering of columns
     column_sources = {
         'Gender_Num': 'gender',
         'Family_Num': 'Family',
@@ -129,7 +127,7 @@ def preprocess_churn_dataset(df):
     df[num_cols] = scaler.fit_transform(df[num_cols])
     return df
 
-#--Function to prepare the data for the various models--
+## Function to prepare the data for the various models
 def prepare_churn_data_for_modeling(df):
         """
         Prepares a copy of the churn dataset by:
@@ -188,7 +186,6 @@ processed_dataset = preprocess_churn_dataset(dataset) ## Call of function and st
 ##Using the preparation function defined globally
 prepared_data = prepare_churn_data_for_modeling(processed_dataset)
 
-
 ##Function to get the most important features
 def get_top_10_features_by_model(model_name: str):
     if model_name == "Decision Tree":
@@ -202,7 +199,6 @@ def get_top_10_features_by_model(model_name: str):
 
     feature_importances = pd.Series(model.feature_importances_, index=X.columns)
     return feature_importances.sort_values(ascending=False).head(10).index.tolist()
-
 
 ## Creating variable for categorical columns
 categorical_cols = [col for col in processed_dataset.columns
@@ -219,12 +215,10 @@ def page1():
 
     if st.checkbox("Processed Data"):
         st.write(processed_dataset) ## Processed dataset
-
-
-##age 2
+##Page 3
 def page2():
     st.header("Exploratory Data Analysis")
-
+  
     st.subheader("Summary Statistics")
     ##Summary statistics of Numeric Columns
     if st.checkbox("Summary Statistics of Numeric Columns"):
@@ -247,15 +241,18 @@ def page2():
         ax.set_title(f"Count Plot of {selected_col}")
         ax.tick_params(axis='x', rotation=45)
 
-        # Streamlit plot
+        #Streamlit plot
         st.pyplot(fig)
 
+    
     if st.checkbox("Visualizing Numeric Columns"):
+
+
         # Chart selection
         chart_type = st.radio("Choose Chart Type", ['Histogram', 'Distribution (KDE)'])
         selected_col = st.selectbox("Select Numeric Column", numeric_cols)
 
-        #---Plotting both Histogram and KDE plots. Creates an option for user to select plot type.---
+        # Plotting both Histogram and KDE plots. Creates an option for user to select plot type.
         fig, ax = plt.subplots(figsize=(10, 5))
 
         if chart_type == 'Histogram':
@@ -278,7 +275,7 @@ def page2():
     if st.checkbox("Checking for Outliers Using Boxplot on Continous Variables"):
         st.subheader('BoxPlot Analysis of  Numeric Variables : MonthlyCharges,TotalCharges and Tenure')
 
-        selected_col = st.selectbox("Select Numeric Column", numeric_cols,key='boxplot_select') # Dropdown for column selection
+        selected_col = st.selectbox("Select Numeric Column", numeric_cols,key='boxplot_select')# Dropdown for column selection
 
         ##Plotting
         fig, ax = plt.subplots(figsize=(8, 4))
@@ -313,30 +310,12 @@ def page2():
         plt.xticks(rotation=45)
         st.pyplot(fig)
 
-    if st.checkbox('Showing Churn Distribution Against Contract Types'):
-        st.subheader("Churn Distribution Across Contract Types")
-
-        fig,ax = plt.subplots(figsize=(8,5))
-        sns.countplot(data=processed_dataset,x='Contract',hue='Churn_Num',palette='Set2',ax=ax)
-        ax.set_title("Contract vs Churn")
-        ax.set_xlabel("Contract Type")
-        ax.set_ylabel("Customer Count")
-        st.pyplot(fig)
-
-        st.markdown(
-            """
-            🔍 **Insight:** Customers with **Month-to-month contracts** exhibit the **highest churn rates**, 
-            while those on **One year** or **Two year contracts** are **less likely to churn**.
-            """
-        )
-
     if st.checkbox("Correlation Matrix"):
-            st.subheader("Correlation between Numeric Features and Churn")
             fig,ax=plt.subplots(figsize=(10,10))
             selected_cols_2 = ['tenure', 'TotalCharges', 'MonthlyCharges', 'Churn_Num']
-            corr_matrix= processed_dataset[selected_cols_2].corr() ##Calculating of correlation among columns
+            corr_matrix= processed_dataset[selected_cols_2].corr()  ##Calculating of correlation among columns
 
-
+            
             ##Plotting the Correlation Matrix
             sns.heatmap(corr_matrix,annot=True,cmap='coolwarm',fmt='.2f',ax =ax)
             ax.set_title('Correlation Matrix')
@@ -348,6 +327,9 @@ def page2():
                 are **less likely to churn**.
                 """
             )
+
+
+
 ##age 3
 def page3():
     st.header("Classification (with Feature Selection)")
@@ -402,7 +384,7 @@ def page3():
     st.session_state[f"{prefix}_recall"] = recall
     st.session_state[f"{prefix}_cv_scores"] = cv_scores
 
-    ##Display metrics
+    ## Display Metrics
     st.metric("Test Accuracy", f"{acc:.2%}")
     with st.expander("10-Fold Cross-Validation (Top 10 Features)"):
         st.write(f"CV Mean Accuracy: **{cv_scores.mean():.2%}**")
@@ -451,10 +433,10 @@ def page3():
     ax_feat.set_title("Top 10 Important Features")
     st.pyplot(fig_feat)
 
-##age 4
+
 def page4():
     st.title("Customer Churn Prediction")
-    st.write("Fill in the customer details to predict churn.")
+    st.write("Fill in the customer details to predict churn.") 
 
     # Model selection
     model_option = st.selectbox("Select Model", ["Decision Tree", "Random Forest"])
@@ -506,8 +488,8 @@ def page4():
                 elif feature == 'PhoneService':
                     inputs[feature] =st.selectbox(feature,['Yes','No'])
 
-        #---Submit Button---.
-        submit = st.form_submit_button("Predict")
+        ##Submit Button.
+        submit = st.form_submit_button("Predict") 
 
     if submit:
         # --- Construct Input ---
@@ -550,7 +532,7 @@ def page4():
             st.warning("⚠️ This customer is likely to churn.") ## Output for prediction(when churn =1)
         else:
             st.balloons()
-            st.info("✅ This customer is likely to stay.")## Output for prediction(when churn =0)
+            st.info("✅ This customer is likely to stay.") ## Output for prediction(when churn =0)
 
         fig, ax = plt.subplots(figsize=(5, 0.4))
         ax.barh([''], [prob], color='orange' if prob > 0.5 else 'green')
@@ -558,6 +540,7 @@ def page4():
         ax.set_xticks(np.linspace(0, 1, 5))
         ax.set_yticks([])
         st.pyplot(fig)
+
 
         # --- SHAP Explanation ---
         st.subheader("🔍 Why this prediction? (SHAP Explanation)")
@@ -583,7 +566,6 @@ def page4():
                 f"- **{feature}** → {direction} churn risk by **{abs(impact * 100):.1f}%**"
             )
 
-        # --- SHAP Bar Plot ---
         # --- SHAP Bar Plot (Manual Matplotlib Version) ---
         st.subheader("🔢 SHAP Feature Impact")
 
@@ -628,11 +610,11 @@ def page4():
                 st.error(
                     f"🚨 **Risk Factors Increasing Churn:** {' | '.join(risky_labels)}"
                 )
-
+   
         class PDF(FPDF):
             def header(self):
                 # Add FOXTECH logo
-                self.image("C:/Users/kojon/PycharmProjects/SupervisedProjects/Supervised Projects/FOXTECH LOGO.jpeg", x=10, y=8, w=30)
+                self.image("data/assets/FOXTECH LOGO.jpeg", x=10, y=8, w=30)
                 self.set_font("Arial", "B", 16)
                 self.cell(0, 10, "Customer Churn Prediction Report", ln=True, align="C")
                 self.ln(12)
@@ -689,7 +671,6 @@ def page4():
             mime="application/pdf"
         )
 
-
 ##Page 5
 def page5():
     st.header("📊 Interpretation and Conclusions")
@@ -703,6 +684,7 @@ def page5():
     dt_features = get_top_10_features_by_model("Decision Tree")
     rf_features = get_top_10_features_by_model("Random Forest")
 
+    #---Column Layout-----
     st.subheader("🔍 Top Predictive Features")
     col1, col2 = st.columns(2)
 
@@ -739,9 +721,11 @@ def page5():
     st.markdown("**Random Forest**")
     plot_feature_importance("Random Forest")
 
+
     # --- Performance Summary Table ---
     st.subheader("📋 Model Performance Comparison")
-    # Retrieve metrics or fallback to N/A
+    
+    # Retrieve metrics from page3 or fallback to N/A
     def get_metric(model, metric):
         key = model.replace(" ", "_") + f"_{metric}"
         if key in st.session_state:
@@ -751,7 +735,8 @@ def page5():
           else:
               return f"{value:.2%}"
         return "N/A"
-
+        
+  #--Summary Table---#
     summary_data = {
         "Model": ["Decision Tree", "Random Forest"],
         "Accuracy (CV)": [get_metric("Decision Tree", "cv_scores"), get_metric("Random Forest", "cv_scores")],
@@ -768,7 +753,7 @@ def page5():
             "Harder to interpret, slower to train"
         ]
     }
-
+    
     summary_df = pd.DataFrame(summary_data)
     st.dataframe(summary_df)
 
@@ -796,5 +781,4 @@ select_page=st.sidebar.selectbox("select page",list(pages.keys()))
 
 ##Display the page when clicked
 pages[select_page]()
-
 
