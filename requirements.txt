@@ -1,0 +1,9 @@
+streamlit
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+Pillow
+shap
+fpdf==1.7.2
