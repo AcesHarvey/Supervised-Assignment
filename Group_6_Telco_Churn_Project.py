@@ -1,55 +1,56 @@
-#--Group Members
-#-1 Amanor Teinor – 22258276---
-#-2.Joseph Harvey-Ewusi – 22253143---
-#-3.Kwadwo Jectey Nyarko – 11410422---
-#-4.Anael K. Djentuh - 22252467---
-#-5.Princess Awurabena Frimpong- 22254024--
-import numpy as np ## 
+# --Group Members
+# -1 Amanor Teinor – 22258276---
+# -2.Joseph Harvey-Ewusi – 22253143---
+# -3.Kwadwo Jectey Nyarko – 11410422---
+# -4.Anael K. Djentuh - 22252467---
+# -5.Princess Awurabena Frimpong- 22254024--
+
+import numpy as np  ##
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from sklearn.model_selection import train_test_split, KFold, cross_val_score  ##Cross validation
+from sklearn.preprocessing import MinMaxScaler  ## Scaling Algorithm
 
-from sklearn.model_selection import train_test_split,KFold,cross_val_score ##Cross validation
-from sklearn.preprocessing import MinMaxScaler ## Scaling Algorithm
-
-from sklearn.tree import DecisionTreeClassifier ## Decision Tree Classisfier
-from sklearn.ensemble import RandomForestClassifier ## Loading of Random Forest Classifier
-
+from sklearn.tree import DecisionTreeClassifier  ## Decision Tree Classisfier
+from sklearn.ensemble import RandomForestClassifier  ## Loading of Random Forest Classifier
 
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.metrics import accuracy_score,f1_score,precision_score,recall_score,classification_report,confusion_matrix,roc_curve,auc ## classification validation metrics
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, \
+    confusion_matrix, roc_curve, auc  ## classification validation metrics
 from sklearn.model_selection import cross_val_score
-import streamlit as st ## Loading of streamlit 
+import streamlit as st  ## Loading of streamlit
 from PIL import Image
 from streamlit import dataframe
 from unicodedata import numeric
-import shap ## To help explain each feature importance to the churn analysis
+import shap  ## To help explain each feature importance to the churn analysis
 from fpdf import FPDF
 import io
 import tempfile
 import os
 
-logo = Image.open("data/assets/FOXTECH LOGO.jpeg") ### Loading of Company Logo
-st.image(logo,caption="",width=300)
+logo = Image.open("C:/Users/yoga/PycharmProjects/SupervisedProject/FOXTECH LOGO.jpeg")  ### Loading of Company Logo
+st.image(logo, caption="", width=300)
 
-#Looading data at the Global level
+# Looading data at the Global level
 try:
-    dataset = pd.read_csv("data/Customer-Churn.csv")
-except FileNotFoundError as e :
+    dataset = pd.read_csv("C:/Users/yoga/PycharmProjects/SupervisedProject/Customer-Churn.csv")
+except FileNotFoundError as e:
     st.error(f"User, check if there is error loading dataset{e}")
     st.stop()
 
 ##creating a copy of data
-dataset_1 = dataset.copy() 
+dataset_1 = dataset.copy()
+
 
 ##Function to preprocess data.
 def preprocess_churn_dataset(df):
-    df = df.copy() ## Creating a copy of the dataa
+    df = df.copy()  ## Creating a copy of the dataa
 
     # Handle missing TotalCharges values by dropping them
     df['TotalCharges'] = df['TotalCharges'].replace(" ", np.nan)
-    df['TotalCharges'] = pd.to_numeric(df['TotalCharges'],errors ='coerce')
+    df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
     df = df.dropna(subset=['TotalCharges'])
 
     # Create 'Family' feature
@@ -121,70 +122,73 @@ def preprocess_churn_dataset(df):
     df.loc[(df['MonthlyCharges'] > 80) & (df['MonthlyCharges'] <= 100), 'MonthlyChargesCat'] = 4
     df.loc[df['MonthlyCharges'] > 100, 'MonthlyChargesCat'] = 5
 
-# Scale all numeric columns
+    # Scale all numeric columns
     scaler = MinMaxScaler()
     num_cols = df.select_dtypes(include=np.number).columns
     df[num_cols] = scaler.fit_transform(df[num_cols])
     return df
 
+
 ## Function to prepare the data for the various models
 def prepare_churn_data_for_modeling(df):
-        """
-        Prepares a copy of the churn dataset by:
-        - Dropping original categorical and non-required columns
-        - Keeping encoded/numerical features
-        - Reordering columns
-        - Renaming columns for readability
-        Returns a cleaned dataframe ready for classification.
-        """
+    """
+    Prepares a copy of the churn dataset by:
+    - Dropping original categorical and non-required columns
+    - Keeping encoded/numerical features
+    - Reordering columns
+    - Renaming columns for readability
+    Returns a cleaned dataframe ready for classification.
+    """
 
-        # Make a copy to preserve original
-        df_cleaned = df.copy()
+    # Make a copy to preserve original
+    df_cleaned = df.copy()
 
-        # Columns to drop (original categorical or unused features) and keeping their equivalent numeric column
-        columns_to_drop = [
-            'gender', 'Partner', 'Dependents', 'tenure', 'PhoneService', 'MultipleLines',
-            'InternetService', 'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
-            'TechSupport', 'StreamingTV', 'StreamingMovies', 'Contract', 'PaperlessBilling',
-            'PaymentMethod', 'TotalCharges', 'Churn', 'Family', 'OnlineServices', 'StreamingServices', 'TenureRange',
-            'MonthlyChargesRange', 'TenureCat',
-        ]
-        df_cleaned.drop(columns=columns_to_drop, axis=1, inplace=True)
+    # Columns to drop (original categorical or unused features) and keeping their equivalent numeric column
+    columns_to_drop = [
+        'gender', 'Partner', 'Dependents', 'tenure', 'PhoneService', 'MultipleLines',
+        'InternetService', 'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
+        'TechSupport', 'StreamingTV', 'StreamingMovies', 'Contract', 'PaperlessBilling',
+        'PaymentMethod', 'TotalCharges', 'Churn', 'Family', 'OnlineServices', 'StreamingServices', 'TenureRange',
+        'MonthlyChargesRange', 'TenureCat',
+    ]
+    df_cleaned.drop(columns=columns_to_drop, axis=1, inplace=True)
 
-        # Desired column order (only encoded/numerical features retained)
-        final_columns = [
-             'Gender_Num', 'SeniorCitizen', 'Family_Num', 'PhoneService_Num',
-            'MultipleLines_Num', 'InternetService_Num', 'OnlineServices_Num', 'DeviceProtection_Num',
-            'TechSupport_Num', 'StreamingServices_Num', 'Contract_Num', 'PaperlessBilling_Num',
-            'PaymentMethod_Num', 'MonthlyCharges', 'Churn_Num'
-        ]
-        df_cleaned = df_cleaned[final_columns]
+    # Desired column order (only encoded/numerical features retained)
+    final_columns = [
+        'Gender_Num', 'SeniorCitizen', 'Family_Num', 'PhoneService_Num',
+        'MultipleLines_Num', 'InternetService_Num', 'OnlineServices_Num', 'DeviceProtection_Num',
+        'TechSupport_Num', 'StreamingServices_Num', 'Contract_Num', 'PaperlessBilling_Num',
+        'PaymentMethod_Num', 'MonthlyCharges', 'Churn_Num'
+    ]
+    df_cleaned = df_cleaned[final_columns]
 
-        # Rename columns to readable names
-        rename_dict = {
-            'Gender_Num': 'Gender',
-            'Family_Num': 'Family',
-            'PhoneService_Num': 'PhoneService',
-            'MultipleLines_Num': 'MultipleLines',
-            'InternetService_Num': 'InternetService',
-            'OnlineServices_Num': 'OnlineServices',
-            'DeviceProtection_Num': 'DeviceProtection',
-            'TechSupport_Num': 'TechSupport',
-            'StreamingServices_Num': 'StreamingServices',
-            'Contract_Num': 'Contract',
-            'PaperlessBilling_Num': 'PaperlessBilling',
-            'PaymentMethod_Num': 'PaymentMethod',
-            'MonthlyCharges': 'MonthlyCharges',
-            'Churn_Num': 'Churn'
-        }
-        df_cleaned.rename(columns=rename_dict, inplace=True)
+    # Rename columns to readable names
+    rename_dict = {
+        'Gender_Num': 'Gender',
+        'Family_Num': 'Family',
+        'PhoneService_Num': 'PhoneService',
+        'MultipleLines_Num': 'MultipleLines',
+        'InternetService_Num': 'InternetService',
+        'OnlineServices_Num': 'OnlineServices',
+        'DeviceProtection_Num': 'DeviceProtection',
+        'TechSupport_Num': 'TechSupport',
+        'StreamingServices_Num': 'StreamingServices',
+        'Contract_Num': 'Contract',
+        'PaperlessBilling_Num': 'PaperlessBilling',
+        'PaymentMethod_Num': 'PaymentMethod',
+        'MonthlyCharges': 'MonthlyCharges',
+        'Churn_Num': 'Churn'
+    }
+    df_cleaned.rename(columns=rename_dict, inplace=True)
 
-        return df_cleaned
+    return df_cleaned
 
-processed_dataset = preprocess_churn_dataset(dataset) ## Call of function and storing it in a variable
+
+processed_dataset = preprocess_churn_dataset(dataset)  ## Call of function and storing it in a variable
 
 ##Using the preparation function defined globally
 prepared_data = prepare_churn_data_for_modeling(processed_dataset)
+
 
 ##Function to get the most important features
 def get_top_10_features_by_model(model_name: str):
@@ -200,25 +204,35 @@ def get_top_10_features_by_model(model_name: str):
     feature_importances = pd.Series(model.feature_importances_, index=X.columns)
     return feature_importances.sort_values(ascending=False).head(10).index.tolist()
 
+
 ## Creating variable for categorical columns
 categorical_cols = [col for col in processed_dataset.columns
-                            if col not in ['customerID', 'SeniorCitizen', 'tenure', 'MonthlyCharges', 'TotalCharges','Family_Num','Gender_Num','Churn_Num','PhoneService_Num','MultipleLines_Num','InternetService_Num','OnlineServices_Num','DeviceProtection_Num','StreamingServices_Num','TechSupport_Num','Contract_Num','PaperlessBilling_Num','PaymentMethod_Num','TenureCat','TenureRange','MonthlyChargesRange','MonthlyChargesCat']]
+                    if
+                    col not in ['customerID', 'SeniorCitizen', 'tenure', 'MonthlyCharges', 'TotalCharges', 'Family_Num',
+                                'Gender_Num', 'Churn_Num', 'PhoneService_Num', 'MultipleLines_Num',
+                                'InternetService_Num', 'OnlineServices_Num', 'DeviceProtection_Num',
+                                'StreamingServices_Num', 'TechSupport_Num', 'Contract_Num', 'PaperlessBilling_Num',
+                                'PaymentMethod_Num', 'TenureCat', 'TenureRange', 'MonthlyChargesRange',
+                                'MonthlyChargesCat']]
 
 ## Creating variable for numerical columns
 numeric_cols = ['tenure', 'MonthlyCharges', 'TotalCharges']
+
 
 ##Page 1
 def page1():
     st.header("Dataset")
     if st.checkbox("Show Raw Data"):
-        st.write(dataset) ## Raw dataset
+        st.write(dataset)  ## Raw dataset
 
     if st.checkbox("Processed Data"):
-        st.write(processed_dataset) ## Processed dataset
+        st.write(processed_dataset)  ## Processed dataset
+
+
 ##Page 3
 def page2():
     st.header("Exploratory Data Analysis")
-  
+
     st.subheader("Summary Statistics")
     ##Summary statistics of Numeric Columns
     if st.checkbox("Summary Statistics of Numeric Columns"):
@@ -231,7 +245,6 @@ def page2():
     st.subheader("Univariate Analysis (Single Column View)")
 
     if st.checkbox("Visualizing Each Categorical Column"):
-
         # Dropdown for column selection
         selected_col = st.selectbox("Select a categorical column", categorical_cols)
 
@@ -241,12 +254,10 @@ def page2():
         ax.set_title(f"Count Plot of {selected_col}")
         ax.tick_params(axis='x', rotation=45)
 
-        #Streamlit plot
+        # Streamlit plot
         st.pyplot(fig)
 
-    
     if st.checkbox("Visualizing Numeric Columns"):
-
 
         # Chart selection
         chart_type = st.radio("Choose Chart Type", ['Histogram', 'Distribution (KDE)'])
@@ -275,35 +286,34 @@ def page2():
     if st.checkbox("Checking for Outliers Using Boxplot on Continous Variables"):
         st.subheader('BoxPlot Analysis of  Numeric Variables : MonthlyCharges,TotalCharges and Tenure')
 
-        selected_col = st.selectbox("Select Numeric Column", numeric_cols,key='boxplot_select')# Dropdown for column selection
+        selected_col = st.selectbox("Select Numeric Column", numeric_cols,
+                                    key='boxplot_select')  # Dropdown for column selection
 
         ##Plotting
         fig, ax = plt.subplots(figsize=(8, 4))
 
-        sns.boxplot(data = processed_dataset,x=selected_col, palette='Set2', ax=ax)
+        sns.boxplot(data=processed_dataset, x=selected_col, palette='Set2', ax=ax)
 
         ax.set_title(f'BoxPlot of {selected_col}')
         st.pyplot(fig)
 
-
     if st.checkbox("Show Tenure Distribution By Churn"):
         fighist = sns.FacetGrid(processed_dataset, col='Churn_Num')
-        fighist.map(plt.hist, 'tenure', bins=20,color='skyblue')
-
+        fighist.map(plt.hist, 'tenure', bins=20, color='skyblue')
 
         st.pyplot(fighist.fig)
 
     if st.checkbox("Show TotalCharges Distribution By Churn"):
         fighist = sns.FacetGrid(processed_dataset, col='Churn_Num')
-        fighist.map(plt.hist, 'TotalCharges', bins=20,color='skyblue')
+        fighist.map(plt.hist, 'TotalCharges', bins=20, color='skyblue')
         st.pyplot(fighist.fig)
 
     if st.checkbox('Showing the Relationship Between Categorical Variables and Churn'):
-        selected_col = st.selectbox("Select a categorical column", categorical_cols,key='distrubution_plots')
+        selected_col = st.selectbox("Select a categorical column", categorical_cols, key='distrubution_plots')
 
-        fig,ax =plt.subplots(figsize=(10,5))
+        fig, ax = plt.subplots(figsize=(10, 5))
 
-        sns.countplot(data=processed_dataset,x=selected_col,hue='Churn_Num',palette='Set3',ax=ax)
+        sns.countplot(data=processed_dataset, x=selected_col, hue='Churn_Num', palette='Set3', ax=ax)
         ax.set_title(f'{selected_col} vs Churn')
         ax.set_ylabel('Count')
         ax.set_xlabel(selected_col)
@@ -311,23 +321,21 @@ def page2():
         st.pyplot(fig)
 
     if st.checkbox("Correlation Matrix"):
-            fig,ax=plt.subplots(figsize=(10,10))
-            selected_cols_2 = ['tenure', 'TotalCharges', 'MonthlyCharges', 'Churn_Num']
-            corr_matrix= processed_dataset[selected_cols_2].corr()  ##Calculating of correlation among columns
+        fig, ax = plt.subplots(figsize=(10, 10))
+        selected_cols_2 = ['tenure', 'TotalCharges', 'MonthlyCharges', 'Churn_Num']
+        corr_matrix = processed_dataset[selected_cols_2].corr()  ##Calculating of correlation among columns
 
-            
-            ##Plotting the Correlation Matrix
-            sns.heatmap(corr_matrix,annot=True,cmap='coolwarm',fmt='.2f',ax =ax)
-            ax.set_title('Correlation Matrix')
-            st.pyplot(fig)
-            st.markdown(
-                """
-                🔍 **Insight:** `TotalCharges` shows a **weak negative correlation** with churn.
-                This implies that customers with **higher total charges (i.e., long-term or high-paying customers)** 
-                are **less likely to churn**.
-                """
-            )
-
+        ##Plotting the Correlation Matrix
+        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', ax=ax)
+        ax.set_title('Correlation Matrix')
+        st.pyplot(fig)
+        st.markdown(
+            """
+            🔍 **Insight:** `TotalCharges` shows a **weak negative correlation** with churn.
+            This implies that customers with **higher total charges (i.e., long-term or high-paying customers)** 
+            are **less likely to churn**.
+            """
+        )
 
 
 ##age 3
@@ -377,7 +385,7 @@ def page3():
     f1 = f1_score(y_test, y_pred)
 
     ##Save metrics to session state
-    prefix = selected_model.replace(" ","_")
+    prefix = selected_model.replace(" ", "_")
     st.session_state[f"{prefix}_accuracy"] = acc
     st.session_state[f"{prefix}_f1"] = f1
     st.session_state[f"{prefix}_precision"] = precision
@@ -436,7 +444,7 @@ def page3():
 
 def page4():
     st.title("Customer Churn Prediction")
-    st.write("Fill in the customer details to predict churn.") 
+    st.write("Fill in the customer details to predict churn.")
 
     # Model selection
     model_option = st.selectbox("Select Model", ["Decision Tree", "Random Forest"])
@@ -484,12 +492,12 @@ def page4():
                 elif feature == 'SeniorCitizen':
                     inputs[feature] = st.selectbox(feature, ['Yes', 'No'])
                 elif feature == 'Gender':
-                    inputs[feature] = st.selectbox(feature,['Male','Female'])
+                    inputs[feature] = st.selectbox(feature, ['Male', 'Female'])
                 elif feature == 'PhoneService':
-                    inputs[feature] =st.selectbox(feature,['Yes','No'])
+                    inputs[feature] = st.selectbox(feature, ['Yes', 'No'])
 
         ##Submit Button.
-        submit = st.form_submit_button("Predict") 
+        submit = st.form_submit_button("Predict")
 
     if submit:
         # --- Construct Input ---
@@ -510,9 +518,9 @@ def page4():
             'InternetService': {'DSL': 0, 'Fiber optic': 1, 'No': 2},
             'Family': {'Yes': 1, 'No': 0},
             'PaperlessBilling': {'Yes': 1, 'No': 0},
-            'SeniorCitizen':{'Yes':1,'No':0},
-            'Gender':{'Male':0,'Female':1},
-            'PhoneService':{'Yes':1,'No':0}
+            'SeniorCitizen': {'Yes': 1, 'No': 0},
+            'Gender': {'Male': 0, 'Female': 1},
+            'PhoneService': {'Yes': 1, 'No': 0}
         }
 
         for col, mapping in mappings.items():
@@ -529,10 +537,10 @@ def page4():
         st.metric("Churn Probability", f"{prob:.2%}")
 
         if pred == 1:
-            st.warning("⚠️ This customer is likely to churn.") ## Output for prediction(when churn =1)
+            st.warning("⚠️ This customer is likely to churn.")  ## Output for prediction(when churn =1)
         else:
             st.balloons()
-            st.info("✅ This customer is likely to stay.") ## Output for prediction(when churn =0)
+            st.info("✅ This customer is likely to stay.")  ## Output for prediction(when churn =0)
 
         fig, ax = plt.subplots(figsize=(5, 0.4))
         ax.barh([''], [prob], color='orange' if prob > 0.5 else 'green')
@@ -540,7 +548,6 @@ def page4():
         ax.set_xticks(np.linspace(0, 1, 5))
         ax.set_yticks([])
         st.pyplot(fig)
-
 
         # --- SHAP Explanation ---
         st.subheader("🔍 Why this prediction? (SHAP Explanation)")
@@ -610,7 +617,7 @@ def page4():
                 st.error(
                     f"🚨 **Risk Factors Increasing Churn:** {' | '.join(risky_labels)}"
                 )
-   
+
         class PDF(FPDF):
             def header(self):
                 # Add FOXTECH logo
@@ -645,7 +652,6 @@ def page4():
                 epw = self.w - self.l_margin - self.r_margin
                 self.image(tmpfile.name, x=10, w=epw - 20)
 
-
                 os.remove(tmpfile_path)
                 self.ln(5)
 
@@ -671,6 +677,7 @@ def page4():
             mime="application/pdf"
         )
 
+
 ##Page 5
 def page5():
     st.header("📊 Interpretation and Conclusions")
@@ -684,7 +691,7 @@ def page5():
     dt_features = get_top_10_features_by_model("Decision Tree")
     rf_features = get_top_10_features_by_model("Random Forest")
 
-    #---Column Layout-----
+    # ---Column Layout-----
     st.subheader("🔍 Top Predictive Features")
     col1, col2 = st.columns(2)
 
@@ -721,22 +728,21 @@ def page5():
     st.markdown("**Random Forest**")
     plot_feature_importance("Random Forest")
 
-
     # --- Performance Summary Table ---
     st.subheader("📋 Model Performance Comparison")
-    
+
     # Retrieve metrics from page3 or fallback to N/A
     def get_metric(model, metric):
         key = model.replace(" ", "_") + f"_{metric}"
         if key in st.session_state:
-          value = st.session_state[key]
-          if isinstance(value,(np.ndarray,list)):
-              return f"{np.mean(value):.2%}"
-          else:
-              return f"{value:.2%}"
+            value = st.session_state[key]
+            if isinstance(value, (np.ndarray, list)):
+                return f"{np.mean(value):.2%}"
+            else:
+                return f"{value:.2%}"
         return "N/A"
-        
-  #--Summary Table---#
+
+    # --Summary Table---#
     summary_data = {
         "Model": ["Decision Tree", "Random Forest"],
         "Accuracy (CV)": [get_metric("Decision Tree", "cv_scores"), get_metric("Random Forest", "cv_scores")],
@@ -753,7 +759,7 @@ def page5():
             "Harder to interpret, slower to train"
         ]
     }
-    
+
     summary_df = pd.DataFrame(summary_data)
     st.dataframe(summary_df)
 
@@ -769,15 +775,15 @@ def page5():
 
 
 pages = {
-   "Dataset":page1,
-    "Exploratory Data Analysis" :page2,
-    "Classification" : page3,
-    "Prediction" : page4,
-    "Interpretation" : page5
- }
+    "Dataset": page1,
+    "Exploratory Data Analysis": page2,
+    "Classification": page3,
+    "Prediction": page4,
+    "Interpretation": page5
+}
 
 ##Creating the  sidebar with  selectionbox
-select_page=st.sidebar.selectbox("select page",list(pages.keys()))
+select_page = st.sidebar.selectbox("select page", list(pages.keys()))
 
 ##Display the page when clicked
 pages[select_page]()
