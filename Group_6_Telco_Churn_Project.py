@@ -35,7 +35,7 @@ st.image(logo, caption="", width=300)
 
 # Looading data at the Global level
 try:
-    dataset = pd.read_csv("C:/Users/yoga/PycharmProjects/SupervisedProject/Customer-Churn.csv")
+    dataset = pd.read_csv("Customer-Churn.csv") 
 except FileNotFoundError as e:
     st.error(f"User, check if there is error loading dataset{e}")
     st.stop()
@@ -787,4 +787,5 @@ select_page = st.sidebar.selectbox("select page", list(pages.keys()))
 
 ##Display the page when clicked
 pages[select_page]()
+
 
