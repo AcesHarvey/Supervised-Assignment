@@ -30,7 +30,7 @@ import io
 import tempfile
 import os
 
-logo = Image.open("C:/Users/yoga/PycharmProjects/SupervisedProject/FOXTECH LOGO.jpeg")  ### Loading of Company Logo
+logo = Image.open("FOXTECH LOGO.jpeg")  ### Loading of Company Logo
 st.image(logo, caption="", width=300)
 
 # Looading data at the Global level
@@ -787,5 +787,6 @@ select_page = st.sidebar.selectbox("select page", list(pages.keys()))
 
 ##Display the page when clicked
 pages[select_page]()
+
 
 
